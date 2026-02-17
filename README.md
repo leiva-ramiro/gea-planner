@@ -1,28 +1,31 @@
-GEA Planner: Full-Stack To-Do App
+# GEA Planner: Full-Stack To-Do App
 
 Welcome to the GEA Planner. If you are coming from the world of C, Microcontrollers, or MATLAB, this project might look like magic, but it’s just a different kind of signal processing.
 
-This app allows us to track assignments across our 3GEA S2 classes, saving data to the cloud so we can access it from our phones during lab.
-🛠 The Tech Stack (The "Hardware")
+This app allows us to track assignments across our 3GEA S2 classes, saving data to the cloud so we can access it from our phones at any time.
+
+## The Tech Stack (The "Hardware")
 
 In C, you manage memory and registers. In Web Dev, we use these three pillars:
-1. Node.js & React (The Logic)
+1. Node.js, React and Vite (The Logic)
 
-    Node.js: Think of this as the Runtime Environment. Just like you need a specific compiler for your PIC or Arduino, Node.js allows your computer to run JavaScript outside of a browser.
+    Node.js: Think of this as the Runtime Environment. Just like you need a specific compiler for your PIC or Arduino, Node.js allows your computer to run JavaScript outside of a browser. This is purely for developpement purposes. 
 
     React: This is NOT Node.js. React is a "UI Library." If C is the assembly language, React is like a high-level GUI framework. It allows us to build "Components" (like our Class Boxes) that update automatically when data changes.
 
-2. Supabase (The Memory/EEPROM)
+   Vite : Think of Vite as the compiler. Web browsers only speak Javascript (like a computer only speaks binary), so we need to convert our React code into Javascript, via Vite. 
+
+3. Supabase (The Memory/EEPROM)
 
     The Problem: Normally, when you turn off a program, the variables reset.
 
     The Solution: Supabase is our Cloud Database. Instead of saving data to a local .txt file or flash memory, we send a JSON packet to Supabase. It stores it in a table (like a spreadsheet) that stays alive forever.
 
-3. Vercel (The Power Supply/Server)
+4. Vercel (The Power Supply/Server)
 
-    Usage: Vercel is our Hosting Provider. It takes our code from GitHub and puts it on a professional server that is always running. This gives us a public URL so we don't have to keep our laptops open to see the app.
+    Usage: Vercel is our Hosting Provider. It takes our code from GitHub (the source code of the app) and puts it on a professional server that is always running. This gives us a public URL so we don't have to keep our laptops open to see the app.
 
-How to Contribute (The "Boot Sequence")
+## How to Contribute (The "Boot Sequence")
 
 If you want to help code this, follow these steps to get the environment running on your machine:
 
