@@ -29,22 +29,29 @@ In C, you manage memory and registers. In Web Dev, we use these three pillars:
 
 If you want to help code this, follow these steps to get the environment running on your machine:
 
-    Clone the Project:
+1. Clone the Project:
+
+    Type in your terminal (PowerShell for windows users) in the folder(directory) where you want to keep the project/app: 
+
     git clone https://github.com/YOUR_USERNAME/gea-planner.git
 
-    Install Dependencies:
-    Open your terminal in the folder and run:
+2. Install Dependencies (tools):
+
+   2.1 Open your terminal in the folder and run:
+
     npm install
+
     (This is like downloading all the header files .h you need for a C project).
 
-    Run the "Dev" Server:
+    2.2 Run the "Dev" Server (type the following command):
+
     npm run dev
 
-        This starts a local server. Open the link it gives you (usually localhost:5173).
+    This starts a local server (local web view of the app, meaning that changes done to the project are local; go nuts). Open the link it gives you (usually localhost:5173).
 
-        Live Reload: Any change you save in VS Code will instantly update the browser. No need to re-compile for 5 minutes!
+    Live Reload: Any change you save in VS Code will instantly update the browser. No need to re-compile for 5 minutes!
 
-Project Structure
+## Project Structure
 
     src/App.jsx: The main brain of the app. It contains the logic for fetching tasks and the HTML-like code (JSX) that draws the boxes.
 
@@ -52,7 +59,7 @@ Project Structure
 
     src/App.css: The "Schematic" for the UI. This controls the colors, the grid layout, and the spacing.
 
-Key Concepts for C Programmers
+## Key Concepts (for C Programmers)
 
     State (useState): In C, you might use a global variable to track a sensor reading. In React, we use "State." When the state changes, the UI "re-renders" (re-draws itself) automatically.
 
@@ -60,7 +67,7 @@ Key Concepts for C Programmers
 
     The Database Insert: We aren't writing to addresses in RAM. We use supabase.from('ToDo').insert(), which is essentially sending a structured command over the internet (API call).
 
-Deployment Flow
+## Deployment Flow
 
 We use a "Continuous Integration" workflow:
 
@@ -68,6 +75,6 @@ We use a "Continuous Integration" workflow:
 
     git push to GitHub.
 
-    Vercel detects the push, "compiles" the code, and updates the live website automatically.
+    Vercel (our server) detects the push, "compiles" the code, and updates the live website automatically.
 
 Let's build the best planner in the GEA department! 
