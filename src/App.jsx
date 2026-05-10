@@ -4,15 +4,15 @@ import { supabase } from './supabaseClient'
 function App() {
 
   const myClasses = [
-    { name: "EC2", coefficient: 4 },
-    { name: "Maths", coefficient: 3 },
-    { name: "Analyse Numérique", coefficient: 3.5 },
-    { name: "ETEP2", coefficient: 3 },
-    { name: "Humanités", coefficient: 3 },
-    { name: "IF2", coefficient: 2 },
-    { name: "Automatique 1", coefficient: 2 },
-    { name: "Télécommunications 1", coefficient: 1 },
-    { name: "Anglais", coefficient: 2 }
+    { name: "EC2", coefficient: 4, code: "EC" },
+    { name: "Maths", coefficient: 3, code: "MA" },
+    { name: "Analyse Numérique", coefficient: 3.5, code: "AN" },
+    { name: "ETEP2", coefficient: 3, code: "ETP" },
+    { name: "Humanités", coefficient: 3, code: "HU" },
+    { name: "IF2", coefficient: 2, code: "IF" },
+    { name: "Automatique 1", coefficient: 2, code: "AU" },
+    { name: "Télécommunications 1", coefficient: 1, code: "TC" },
+    { name: "Anglais", coefficient: 2, code: "ANG" }
 
   ];
 
@@ -247,7 +247,7 @@ function App() {
       </div>
 
       {/* MAIN CONTENT */}
-      <div style={{ flex: 1, padding: '40px', overflow: 'auto', marginLeft: 0, width: '100%', boxSizing: 'border-box', paddingTop: 'max(40px, 80px)' }}>
+      <div className="main-content" style={{ flex: 1, padding: '40px', overflow: 'auto', marginLeft: 0, width: '100%', boxSizing: 'border-box', paddingTop: 'max(40px, 80px)' }}>
         {/* MOBILE MENU BUTTON */}
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -271,7 +271,7 @@ function App() {
           ☰
         </button>
 
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <header className="app-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ color: '#1e293b' }}>3GEA S2 Planner</h1>
         </header>
         
@@ -340,7 +340,7 @@ function App() {
                     >
                       {date && (
                         <>
-                          <div style={{
+                          <div className="day-number" style={{
                             fontWeight: isToday ? 'bold' : 'normal',
                             width: isToday ? '28px' : 'auto',
                             height: isToday ? '28px' : 'auto',
@@ -359,6 +359,7 @@ function App() {
                             {tasksForDate.map(task => (
                               <div
                                 key={task.id}
+                                className="task-item"
                                 style={{
                                   backgroundColor: '#eff6ff',
                                   borderLeft: '3px solid #3b82f6',
@@ -378,7 +379,14 @@ function App() {
                                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#dbeafe'}
                                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#eff6ff'}
                               >
-                                {task.titre}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                  <span style={{ backgroundColor: '#e0f2fe', color: '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
+                                    {myClasses.find(c => c.name === task.class_name)?.code || ''}
+                                  </span>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                    {task.titre}
+                                  </span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -495,6 +503,24 @@ function App() {
 
         .calendar-day {
           min-height: 120px;
+          padding: 12px;
+        }
+
+        .day-number {
+          font-size: 1rem;
+        }
+
+        .task-item {
+          font-size: 0.7rem;
+        }
+
+        .app-header {
+          margin-bottom: 40px;
+        }
+
+        .main-content {
+          padding: 40px;
+          padding-top: max(40px, 80px);
         }
 
         @media (max-width: 768px) {
@@ -526,11 +552,33 @@ function App() {
           }
 
           .calendar-grid {
-            min-height: 350px;
+            min-height: auto;
           }
 
           .calendar-day {
-            min-height: 80px;
+            min-height: 60px;
+            padding: 8px;
+          }
+
+          .day-number {
+            font-size: 0.8rem;
+          }
+
+          .task-item {
+            font-size: 0.6rem;
+          }
+
+          .app-header {
+            margin-bottom: 20px;
+          }
+
+          .app-header h1 {
+            font-size: 1.5rem;
+          }
+
+          .main-content {
+            padding: 20px !important;
+            padding-top: 60px !important;
           }
         }
 
