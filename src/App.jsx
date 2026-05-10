@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
 function App() {
+
   const myClasses = [
     { name: "EC2", coefficient: 4 },
     { name: "Maths", coefficient: 3 },
@@ -14,6 +15,7 @@ function App() {
     { name: "Anglais", coefficient: 2 }
 
   ];
+
   const [tasks, setTasks] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'calendar'
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -130,6 +132,18 @@ function App() {
     }
 
     return days;
+  };
+
+  const isHighlighted = (date) => {
+    const month = date.getMonth();
+    const day = date.getDate();
+    if (month === 4 && day >= 18 && day <= 22) return true;
+    if (month === 5 && day >= 1 && day <= 5) return true;
+    if (month === 5 && day >= 8 && day <= 12) return true;
+    if (month === 5 && day >= 22 && day <= 26) return true;
+    if (month === 5 && day >= 29) return true;
+    if (month === 6 && day <= 3) return true;
+    return false;
   };
 
   return (
@@ -263,8 +277,8 @@ function App() {
         
         {viewMode === 'calendar' ? (
           // CALENDAR VIEW
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: '30px' }}>
+          <div className="calendar-container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <div className="calendar-inner" style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: '30px' }}>
               {/* Month Navigation */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <button 
@@ -294,17 +308,29 @@ function App() {
               </div>
 
               {/* Calendar Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', backgroundColor: '#e2e8f0', padding: '1px', borderRadius: '6px', overflow: 'hidden', minHeight: '500px' }}>
+              <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', backgroundColor: '#e2e8f0', padding: '1px', borderRadius: '6px', overflow: 'hidden', minHeight: '500px' }}>
                 {generateCalendarDays().map((date, idx) => {
                   const tasksForDate = date ? getTasksForDate(date) : [];
                   const isToday = date && new Date().toDateString() === date.toDateString();
                   const isCurrentMonth = date && date.getMonth() === currentMonth.getMonth();
 
+                  let bgColor = '#f8fafc';
+                  if (date) {
+                    if (isToday) {
+                      bgColor = '#3b82f6';
+                    } else if (isHighlighted(date)) {
+                      bgColor = '#d1fae5';
+                    } else if (isCurrentMonth) {
+                      bgColor = 'white';
+                    }
+                  }
+
                   return (
                     <div
                       key={idx}
+                      className="calendar-day"
                       style={{
-                        backgroundColor: date ? (isCurrentMonth ? 'white' : '#f8fafc') : '#f8fafc',
+                        backgroundColor: bgColor,
                         padding: '12px',
                         minHeight: '120px',
                         display: 'flex',
@@ -454,6 +480,23 @@ function App() {
 
       {/* MOBILE RESPONSIVE STYLES */}
       <style>{`
+        .calendar-container {
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+
+        .calendar-inner {
+          padding: 30px;
+        }
+
+        .calendar-grid {
+          min-height: 500px;
+        }
+
+        .calendar-day {
+          min-height: 120px;
+        }
+
         @media (max-width: 768px) {
           .mobile-menu-button {
             display: block !important;
@@ -472,6 +515,22 @@ function App() {
 
           .sidebar[style*="left: 0"] {
             left: 0 !important;
+          }
+
+          .calendar-container {
+            max-width: 100%;
+          }
+
+          .calendar-inner {
+            padding: 15px;
+          }
+
+          .calendar-grid {
+            min-height: 350px;
+          }
+
+          .calendar-day {
+            min-height: 80px;
           }
         }
 
