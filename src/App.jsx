@@ -12,7 +12,8 @@ function App() {
     { name: "IF2", coefficient: 2, code: "IF" },
     { name: "Automatique 1", coefficient: 2, code: "AU" },
     { name: "Télécommunications 1", coefficient: 1, code: "TC" },
-    { name: "Anglais", coefficient: 2, code: "ANG" }
+    { name: "Anglais", coefficient: 2, code: "ANG" }, 
+    { name: "Appointements", coefficient: 0, code: "Perso" },
 
   ];
 
@@ -104,9 +105,11 @@ function App() {
 
   // --- NEW: CALENDAR HELPER FUNCTIONS ---
   const getTasksForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = date.toLocaleDateString('en-CA');
     return tasks.filter(t => t.dateRendu === dateStr);
   };
+
+  const isAppointmentTask = (task) => task.class_name === 'Appointements';
 
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -356,39 +359,42 @@ function App() {
                             {date.getDate()}
                           </div>
                           <div style={{ flex: 1, overflow: 'auto' }}>
-                            {tasksForDate.map(task => (
-                              <div
-                                key={task.id}
-                                className="task-item"
-                                style={{
-                                  backgroundColor: '#eff6ff',
-                                  borderLeft: '3px solid #3b82f6',
-                                  padding: '4px 6px',
-                                  marginBottom: '4px',
-                                  borderRadius: '3px',
-                                  fontSize: '0.7rem',
-                                  color: '#1e293b',
-                                  fontWeight: '500',
-                                  cursor: 'pointer',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}
-                                title={task.titre}
-                                onClick={() => editTask(task)}
-                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#dbeafe'}
-                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#eff6ff'}
-                              >
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                  <span style={{ backgroundColor: '#e0f2fe', color: '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
-                                    {myClasses.find(c => c.name === task.class_name)?.code || ''}
-                                  </span>
-                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                    {task.titre}
-                                  </span>
+                            {tasksForDate.map(task => {
+                              const appointment = isAppointmentTask(task);
+                              return (
+                                <div
+                                  key={task.id}
+                                  className="task-item"
+                                  style={{
+                                    backgroundColor: appointment ? '#fef3c7' : '#eff6ff',
+                                    borderLeft: appointment ? '3px solid #f59e0b' : '3px solid #3b82f6',
+                                    padding: '4px 6px',
+                                    marginBottom: '4px',
+                                    borderRadius: '3px',
+                                    fontSize: '0.7rem',
+                                    color: '#1e293b',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title={task.titre}
+                                  onClick={() => editTask(task)}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = appointment ? '#fef08a' : '#dbeafe'}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = appointment ? '#fef3c7' : '#eff6ff'}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                    <span style={{ backgroundColor: appointment ? '#fde68a' : '#e0f2fe', color: '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
+                                      {myClasses.find(c => c.name === task.class_name)?.code || ''}
+                                    </span>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                      {task.titre}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </>
                       )}
