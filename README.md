@@ -1,21 +1,22 @@
 # GEA Planner: Full-Stack To-Do App
 
-Welcome to the GEA Planner. If you are coming from the world of C, Microcontrollers, or MATLAB, this project might look like magic, but it’s just a different kind of signal processing.
+Welcome to the GEA Planner. If you are coming from the world of C and  Microcontrollers, this project might look like magic, but it’s just a different kind of signal processing.
 
 This app allows us to track assignments across our 3GEA S2 classes, saving data to the cloud so we can access it from our phones at any time.
 
 ## The Tech Stack (The "Hardware")
 
-In C, you manage memory and registers. In Web Dev, we use these three pillars:
-1. Node.js, React and Vite (The Logic)
+In C, you manage memory and registers. In Web Dev, we use these three pillars: (The Logic)
 
-    Node.js: Think of this as the Runtime Environment. Just like you need a specific compiler for your PIC or Arduino, Node.js allows your computer to run JavaScript outside of a browser. This is purely for developpement purposes. 
+1. Node.js, React and Vite 
 
-    React: This is NOT Node.js. React is a "UI Library." If C is the assembly language, React is like a high-level GUI framework. It allows us to build "Components" (like our Class Boxes) that update automatically when data changes.
+   - Node.js: Think of this as the Runtime Environment. Just like you need a specific compiler for your PIC or Arduino, Node.js allows your computer to run JavaScript outside of a browser. This is purely for developpement purposes. 
 
-   Vite : Think of Vite as the compiler. Web browsers only speak Javascript (like a computer only speaks binary), so we need to convert our React code into Javascript, via Vite. 
+   - React: This is NOT Node.js. React is a "UI Library." If C is the assembly language, React is like a high-level GUI framework. It allows us to build "Components" (like our Class Boxes) that update automatically when data changes.
 
-3. Supabase (The Memory/EEPROM)
+   - Vite : Think of Vite as the compiler. Web browsers only speak Javascript (like a computer only speaks binary), so we need to convert our React code into Javascript, via Vite. 
+
+3. Supabase (The Memory)
 
     The Problem: Normally, when you turn off a program, the variables reset.
 
