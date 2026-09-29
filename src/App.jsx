@@ -23,19 +23,78 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('gea-planner-theme') || 'light');
   const [taskError, setTaskError] = useState('');
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [taskScope, setTaskScope] = useState('personal');
+  const userId = session?.user?.id;
 
   useEffect(() => {
     localStorage.setItem('gea-planner-theme', theme);
   }, [theme]);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setTasks([]);
+      return;
+    }
+
+    let isActive = true;
     async function loadTasks() {
-      const { data } = await supabase.from('ToDo').select('*');
-      if (data) setTasks(data);
+      const { data, error } = await supabase.from('ToDo').select('*');
+      if (!isActive) return;
+      if (error) {
+        setTaskError(`Impossible de charger les tâches : ${error.message}`);
+        return;
+      }
+      setTasks(data || []);
+      setTaskError('');
     }
 
     loadTasks();
-  }, []);
+    return () => { isActive = false; };
+  }, [userId]);
+
+  const submitAuth = async (event) => {
+    event.preventDefault();
+    setAuthError('');
+    setAuthMessage('');
+    setAuthBusy(true);
+
+    const result = authMode === 'signup'
+      ? await supabase.auth.signUp({ email: authEmail.trim(), password: authPassword })
+      : await supabase.auth.signInWithPassword({ email: authEmail.trim(), password: authPassword });
+
+    setAuthBusy(false);
+    if (result.error) {
+      setAuthError(result.error.message);
+    } else if (authMode === 'signup' && !result.data.session) {
+      setAuthMessage('Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.');
+    }
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) setTaskError(`Impossible de se déconnecter : ${error.message}`);
+  };
 
   const addTask = async (classObj) => {
     const taskName = prompt(`Quelle est la nouvelle tâche pour ${formatClassName(classObj.name)} ?`);
@@ -51,7 +110,13 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('ToDo')
-        .insert([{ titre: taskName.trim(), dateRendu: normalizedDueDate || "No date", class_name: classObj.name }])
+        .insert([{
+          titre: taskName.trim(),
+          dateRendu: normalizedDueDate || "No date",
+          class_name: classObj.name,
+          owner_id: userId,
+          is_shared: taskScope === 'shared'
+        }])
         .select();
 
       if (error) throw error;
@@ -113,7 +178,7 @@ function App() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return [...tasks].sort((a, b) => {
+    return [...scopedTasks].sort((a, b) => {
       // Parse dates
       const dateA = a.dateRendu === "No date" ? new Date(8640000000000000) : new Date(a.dateRendu);
       const dateB = b.dateRendu === "No date" ? new Date(8640000000000000) : new Date(b.dateRendu);
@@ -136,8 +201,12 @@ function App() {
   // --- NEW: CALENDAR HELPER FUNCTIONS ---
   const getTasksForDate = (date) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    return tasks.filter(t => getTaskDateKey(t.dateRendu) === dateStr);
+    return scopedTasks.filter(t => getTaskDateKey(t.dateRendu) === dateStr);
   };
+
+  const scopedTasks = tasks.filter(task => taskScope === 'shared'
+    ? task.is_shared
+    : task.owner_id === session?.user?.id && !task.is_shared);
 
   const formatClassName = (name) => name === 'TACHES' ? 'Tâches' : name;
 
@@ -212,6 +281,57 @@ function App() {
     if (month === 6 && day <= 3) return true;
     return false;
   };
+
+  if (authLoading) {
+    return <main className="auth-screen" data-theme={theme}><p>Chargement de votre session...</p></main>;
+  }
+
+  if (!session) {
+    return (
+      <main className="auth-screen" data-theme={theme}>
+        <form className="auth-panel" onSubmit={submitAuth}>
+          <p className="auth-eyebrow">GEA · PLANNING</p>
+          <h1>{authMode === 'login' ? 'Connexion' : 'Créer un compte'}</h1>
+          <p className="auth-description">Connectez-vous pour retrouver vos tâches personnelles et celles partagées.</p>
+          <label htmlFor="auth-email">Adresse e-mail</label>
+          <input
+            id="auth-email"
+            type="email"
+            autoComplete="email"
+            value={authEmail}
+            onChange={event => setAuthEmail(event.target.value)}
+            required
+          />
+          <label htmlFor="auth-password">Mot de passe</label>
+          <input
+            id="auth-password"
+            type="password"
+            autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+            minLength={8}
+            value={authPassword}
+            onChange={event => setAuthPassword(event.target.value)}
+            required
+          />
+          {authError && <p className="auth-error" role="alert">{authError}</p>}
+          {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
+          <button className="auth-submit" type="submit" disabled={authBusy}>
+            {authBusy ? 'Veuillez patienter...' : authMode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+          </button>
+          <button
+            className="auth-switch"
+            type="button"
+            onClick={() => {
+              setAuthMode(authMode === 'login' ? 'signup' : 'login');
+              setAuthError('');
+              setAuthMessage('');
+            }}
+          >
+            {authMode === 'login' ? 'Créer un compte' : 'J’ai déjà un compte'}
+          </button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <div data-theme={theme} style={{ display: 'flex', backgroundColor: '#fffafa', minHeight: '100vh', width: '100vw', boxSizing: 'border-box', fontFamily: 'sans-serif', position: 'relative' }}>
@@ -352,6 +472,17 @@ function App() {
           </button>
         </header>
 
+        <div className="account-toolbar">
+          <div className="task-scope-switch" aria-label="Vue des tâches">
+            <button type="button" aria-pressed={taskScope === 'personal'} onClick={() => setTaskScope('personal')}>Mes tâches</button>
+            <button type="button" aria-pressed={taskScope === 'shared'} onClick={() => setTaskScope('shared')}>Tâches partagées</button>
+          </div>
+          <div className="account-actions">
+            <span>{session.user.email}</span>
+            <button type="button" onClick={signOut}>Déconnexion</button>
+          </div>
+        </div>
+
         {taskError && <div className="task-error" role="alert">{taskError}</div>}
         
         {viewMode === 'calendar' ? (
@@ -490,7 +621,7 @@ function App() {
                 </div>
                 
                 <div style={{ padding: '20px', flexGrow: 1, minHeight: '150px' }}>
-                  {tasks.filter(t => t.class_name === classObj.name).map(task => (
+                  {scopedTasks.filter(t => t.class_name === classObj.name).map(task => (
                     <div key={task.id} style={{ padding: '10px 0', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div 
                         onClick={() => editTask(task)}

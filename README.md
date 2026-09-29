@@ -78,4 +78,16 @@ We use a "Continuous Integration" workflow:
 
     Vercel (our server) detects the push, "compiles" the code, and updates the live website automatically.
 
+## Authentification et tâches partagées
+
+L’application utilise Supabase Auth avec une adresse e-mail et un mot de passe. Chaque compte dispose d’une vue « Mes tâches » privée et d’une vue « Tâches partagées » visible par tous les comptes connectés. Les tâches existantes sont conservées dans la vue partagée.
+
+Avant de déployer cette version :
+
+1. Dans Supabase, ouvrez **SQL Editor** et exécutez `supabase/migrations/202609290001_auth_personal_shared_tasks.sql`.
+2. Dans **Authentication > Providers > Email**, activez le fournisseur e-mail et autorisez les inscriptions si de nouveaux utilisateurs doivent créer leur compte depuis l’application.
+3. Configurez les URL du site et de redirection dans **Authentication > URL Configuration** pour inclure l’URL locale et l’URL de production. Si la confirmation d’adresse e-mail est activée, le nouvel utilisateur doit confirmer son adresse avant de se connecter.
+
+La migration ajoute `owner_id` et `is_shared` à `public."ToDo"`, active RLS et remplace les politiques existantes de cette table. Les tâches personnelles ne sont accessibles qu’à leur propriétaire. Les tâches partagées sont accessibles à tous les utilisateurs authentifiés et peuvent être modifiées ou supprimées par tout utilisateur connecté.
+
 Let's build the best planner in the GEA department! 
