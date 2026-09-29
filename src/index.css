@@ -19,31 +19,44 @@ button {
 
 [data-theme="dark"] {
 	color-scheme: dark;
-	color: #e5edf5;
-	background-color: #111923 !important;
+	color: #f1e9e9;
+	background-color: #1c1718 !important;
 }
 
 [data-theme="dark"] h1,
 [data-theme="dark"] h2 {
-	color: #e5edf5 !important;
+	color: #f1e9e9 !important;
 }
 
 [data-theme="dark"] [style*="background-color: white"],
 [data-theme="dark"] [style*="background-color: #fff"],
 [data-theme="dark"] [style*="background-color: rgb(255, 255, 255)"] {
-	background-color: #202c3a !important;
+	background-color: #2a2022 !important;
 }
 
 [data-theme="dark"] [style*="background-color: #f8fafc"],
 [data-theme="dark"] [style*="background-color: rgb(248, 250, 252)"],
 [data-theme="dark"] [style*="background-color: #f1f5f9"],
 [data-theme="dark"] [style*="background-color: rgb(241, 245, 249)"] {
-	background-color: #17212e !important;
+	background-color: #241b1d !important;
 }
 
 [data-theme="dark"] [style*="background-color: #eff6ff"],
 [data-theme="dark"] [style*="background-color: rgb(239, 246, 255)"] {
-	background-color: #233d57 !important;
+	background-color: #49272d !important;
+}
+
+[data-theme="dark"] [style*="background-color: rgb(255, 241, 242)"] {
+	background-color: #49272d !important;
+}
+
+[data-theme="dark"] [style*="background-color: #e2e8f0"],
+[data-theme="dark"] [style*="background-color: rgb(226, 232, 240)"] {
+	background-color: #473438 !important;
+}
+
+[data-theme="dark"] [style*="background-color: #3b82f6"] {
+	background-color: #a53a4c !important;
 }
 
 [data-theme="dark"] [style*="color: #1e293b"],
@@ -52,12 +65,17 @@ button {
 [data-theme="dark"] [style*="color: rgb(51, 65, 85)"],
 [data-theme="dark"] [style*="color: #0f172a"],
 [data-theme="dark"] [style*="color: rgb(15, 23, 42)"] {
-	color: #e5edf5 !important;
+	color: #f1e9e9 !important;
+}
+
+[data-theme="dark"] [style*="color: #a71930"],
+[data-theme="dark"] [style*="color: rgb(167, 25, 48)"] {
+	color: #f1c6cc !important;
 }
 
 [data-theme="dark"] [style*="border-bottom: 1px solid #f1f5f9"],
 [data-theme="dark"] [style*="border-bottom: 1px solid rgb(241, 245, 249)"] {
-	border-color: #344253 !important;
+	border-color: #473438 !important;
 }
 
 .theme-toggle {
@@ -89,13 +107,13 @@ button {
 }
 
 [data-theme="dark"] .theme-toggle {
-	border-color: #526276;
-	background: #263547;
-	color: #e5edf5;
+	border-color: #624047;
+	background: #39262a;
+	color: #f1e9e9;
 }
 
 [data-theme="dark"] .theme-toggle:hover {
-	background: #33465c;
+	background: #4b2d33;
 }
 
 [data-theme="dark"] .task-error {

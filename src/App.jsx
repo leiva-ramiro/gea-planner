@@ -38,26 +38,31 @@ function App() {
   }, []);
 
   const addTask = async (classObj) => {
-    const taskName = prompt(`What is the new task for ${classObj.name}?`);
+    const taskName = prompt(`Quelle est la nouvelle tâche pour ${formatClassName(classObj.name)} ?`);
     if (taskName === null || !taskName.trim()) return;
-    const dueDate = prompt(`When is it due?`);
+    const dueDate = prompt('Date d’échéance (JJ/MM/AAAA), ou laissez vide :');
+    const normalizedDueDate = normalizeTaskDate(dueDate);
+    if (dueDate?.trim() && !normalizedDueDate) {
+      setTaskError('Format de date invalide. Utilisez JJ/MM/AAAA, par exemple 05/11/2026.');
+      return;
+    }
 
     setTaskError('');
     try {
       const { data, error } = await supabase
         .from('ToDo')
-        .insert([{ titre: taskName.trim(), dateRendu: dueDate?.trim() || "No date", class_name: classObj.name }])
+        .insert([{ titre: taskName.trim(), dateRendu: normalizedDueDate || "No date", class_name: classObj.name }])
         .select();
 
       if (error) throw error;
       if (!data?.length) {
-        setTaskError('The task was not returned by Supabase. Check the table permissions and try refreshing.');
+        setTaskError('La tâche n’a pas été renvoyée par Supabase. Vérifiez les autorisations de la table et actualisez la page.');
         return;
       }
 
       setTasks(currentTasks => [...currentTasks, ...data]);
     } catch (error) {
-      setTaskError(`Could not add task: ${error.message || 'Supabase request failed.'}`);
+      setTaskError(`Impossible d’ajouter la tâche : ${error.message || 'La requête Supabase a échoué.'}`);
     }
   };
 
@@ -76,15 +81,20 @@ function App() {
 
   // --- NEW: EDIT FUNCTION ---
   const editTask = async (task) => {
-    const newTaskName = prompt(`Edit task name:`, task.titre);
+    const newTaskName = prompt('Modifier le nom de la tâche :', task.titre);
     if (newTaskName === null) return; // User cancelled
 
-    const newDueDate = prompt(`Edit due date:`, task.dateRendu);
+    const newDueDate = prompt('Modifier la date d’échéance (JJ/MM/AAAA) :', formatTaskDate(task.dateRendu) === 'Sans date' ? '' : formatTaskDate(task.dateRendu));
     if (newDueDate === null) return; // User cancelled
+    const normalizedDueDate = normalizeTaskDate(newDueDate);
+    if (newDueDate.trim() && !normalizedDueDate) {
+      setTaskError('Format de date invalide. Utilisez JJ/MM/AAAA, par exemple 05/11/2026.');
+      return;
+    }
 
     const { data } = await supabase
       .from('ToDo')
-      .update({ titre: newTaskName, dateRendu: newDueDate || "No date" })
+      .update({ titre: newTaskName, dateRendu: normalizedDueDate || "No date" })
       .eq('id', task.id)
       .select();
 
@@ -120,8 +130,36 @@ function App() {
 
   // --- NEW: CALENDAR HELPER FUNCTIONS ---
   const getTasksForDate = (date) => {
-    const dateStr = date.toLocaleDateString('en-CA');
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return tasks.filter(t => t.dateRendu === dateStr);
+  };
+
+  const formatClassName = (name) => name === 'TACHES' ? 'Tâches' : name;
+
+  const formatTaskDate = (value) => {
+    if (value === 'No date') return 'Sans date';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number);
+      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    }
+    return value;
+  };
+
+  const normalizeTaskDate = (value) => {
+    const trimmedValue = value?.trim();
+    if (!trimmedValue) return '';
+
+    const match = trimmedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const [, dayText, monthText, yearText] = match;
+    const day = Number(dayText);
+    const month = Number(monthText);
+    const year = Number(yearText);
+    const parsedDate = new Date(year, month - 1, day);
+    if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== month - 1 || parsedDate.getDate() !== day) return null;
+
+    return `${yearText}-${monthText.padStart(2, '0')}-${dayText.padStart(2, '0')}`;
   };
 
   const isAppointmentTask = (task) => task.class_name === 'Appointements';
@@ -131,7 +169,7 @@ function App() {
   };
 
   const getFirstDayOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return (new Date(date.getFullYear(), date.getMonth(), 1).getDay() + 6) % 7;
   };
 
   const generateCalendarDays = () => {
@@ -165,7 +203,7 @@ function App() {
   };
 
   return (
-    <div data-theme={theme} style={{ display: 'flex', backgroundColor: '#f8fafc', minHeight: '100vh', width: '100vw', boxSizing: 'border-box', fontFamily: 'sans-serif', position: 'relative' }}>
+    <div data-theme={theme} style={{ display: 'flex', backgroundColor: '#fffafa', minHeight: '100vh', width: '100vw', boxSizing: 'border-box', fontFamily: 'sans-serif', position: 'relative' }}>
       {/* OVERLAY FOR MOBILE */}
       {sidebarOpen && (
         <div 
@@ -189,7 +227,7 @@ function App() {
         className="sidebar"
         style={{ 
         width: '200px', 
-        backgroundColor: '#1e293b', 
+        backgroundColor: '#252729', 
         padding: '20px', 
         display: 'flex', 
         flexDirection: 'column', 
@@ -204,7 +242,7 @@ function App() {
         transition: 'transform 0.15s ease',
         overflowY: 'auto'
       }}>
-        <h3 style={{ color: 'white', margin: '0 0 20px 0', fontSize: '1rem' }}>View</h3>
+        <h3 style={{ color: 'white', margin: '0 0 20px 0', fontSize: '1rem' }}>Affichage</h3>
         
         <button 
           onClick={() => { setViewMode('grid'); setSidebarOpen(false); }}
@@ -212,17 +250,17 @@ function App() {
             padding: '12px 16px', 
             borderRadius: '8px', 
             border: 'none', 
-            backgroundColor: viewMode === 'grid' ? '#3b82f6' : '#334155',
+            backgroundColor: viewMode === 'grid' ? '#55595e' : '#35383b',
             color: 'white',
             cursor: 'pointer',
             fontSize: '0.95rem',
             fontWeight: viewMode === 'grid' ? 'bold' : 'normal',
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'grid' ? '#2563eb' : '#475569'}
-          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'grid' ? '#3b82f6' : '#334155'}
+          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'grid' ? '#666b70' : '#464a4e'}
+          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'grid' ? '#55595e' : '#35383b'}
         >
-          📋 Classes Tasks 
+          📋 Tâches par matière
         </button>
         
         <button 
@@ -231,17 +269,17 @@ function App() {
             padding: '12px 16px', 
             borderRadius: '8px', 
             border: 'none', 
-            backgroundColor: viewMode === 'list' ? '#3b82f6' : '#334155',
+            backgroundColor: viewMode === 'list' ? '#55595e' : '#35383b',
             color: 'white',
             cursor: 'pointer',
             fontSize: '0.95rem',
             fontWeight: viewMode === 'list' ? 'bold' : 'normal',
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'list' ? '#2563eb' : '#475569'}
-          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'list' ? '#3b82f6' : '#334155'}
+          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'list' ? '#666b70' : '#464a4e'}
+          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'list' ? '#55595e' : '#35383b'}
         >
-          📝 All Tasks List
+          📝 Toutes les tâches
         </button>
 
         <button 
@@ -250,17 +288,17 @@ function App() {
             padding: '12px 16px', 
             borderRadius: '8px', 
             border: 'none', 
-            backgroundColor: viewMode === 'calendar' ? '#3b82f6' : '#334155',
+            backgroundColor: viewMode === 'calendar' ? '#55595e' : '#35383b',
             color: 'white',
             cursor: 'pointer',
             fontSize: '0.95rem',
             fontWeight: viewMode === 'calendar' ? 'bold' : 'normal',
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'calendar' ? '#2563eb' : '#475569'}
-          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'calendar' ? '#3b82f6' : '#334155'}
+          onMouseOver={(e) => e.target.style.backgroundColor = viewMode === 'calendar' ? '#666b70' : '#464a4e'}
+          onMouseOut={(e) => e.target.style.backgroundColor = viewMode === 'calendar' ? '#55595e' : '#35383b'}
         >
-          📅 Calendar
+          📅 Calendrier
         </button>
       </div>
 
@@ -276,7 +314,7 @@ function App() {
             width: '50px',
             height: '50px',
             borderRadius: '8px',
-            backgroundColor: '#1e293b',
+            backgroundColor: '#252729',
             color: 'white',
             border: 'none',
             cursor: 'pointer',
@@ -285,20 +323,21 @@ function App() {
             display: 'none'
           }}
           className="mobile-menu-button"
+          aria-label="Ouvrir le menu"
         >
           ☰
         </button>
 
         <header className="app-header" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
-          <h1 style={{ color: '#1e293b' }}>4GEA S3 Planner</h1>
+          <h1 style={{ color: '#a71930' }}>Planning 4GEA S3</h1>
           <button
             type="button"
             className="theme-toggle"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            aria-label={`Passer en mode ${theme === 'dark' ? 'clair' : 'sombre'}`}
             aria-pressed={theme === 'dark'}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+            {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
           </button>
         </header>
 
@@ -312,24 +351,24 @@ function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <button 
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                  style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#3b82f6', color: 'white', cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#c41230', color: 'white', cursor: 'pointer' }}
                 >
-                  ← Prev
+                  ← Précédent
                 </button>
                 <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#1e293b' }}>
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                 </h2>
                 <button 
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                  style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#3b82f6', color: 'white', cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#c41230', color: 'white', cursor: 'pointer' }}
                 >
-                  Next →
+                  Suivant →
                 </button>
               </div>
 
               {/* Weekdays */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', backgroundColor: '#e2e8f0', padding: '1px', marginBottom: '10px', borderRadius: '6px', overflow: 'hidden' }}>
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
                   <div key={day} style={{ backgroundColor: '#f1f5f9', padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>
                     {day}
                   </div>
@@ -343,14 +382,14 @@ function App() {
                   const isToday = date && new Date().toDateString() === date.toDateString();
                   const isCurrentMonth = date && date.getMonth() === currentMonth.getMonth();
 
-                  let bgColor = theme === 'dark' ? '#17212e' : '#f8fafc';
+                  let bgColor = theme === 'dark' ? '#192320' : '#f8fafc';
                   if (date) {
                     if (isToday) {
-                      bgColor = '#3b82f6';
+                      bgColor = theme === 'dark' ? '#a53a4c' : '#c41230';
                     } else if (isHighlighted(date)) {
-                      bgColor = theme === 'dark' ? '#263b38' : '#d1fae5';
+                      bgColor = theme === 'dark' ? '#42272c' : '#fff0f2';
                     } else if (isCurrentMonth) {
-                      bgColor = theme === 'dark' ? '#202c3a' : 'white';
+                      bgColor = theme === 'dark' ? '#202a27' : 'white';
                     }
                   }
 
@@ -380,7 +419,7 @@ function App() {
                             marginBottom: '8px',
                             fontSize: isCurrentMonth ? '1rem' : '0.85rem',
                             color: isToday ? 'white' : (isCurrentMonth ? '#1e293b' : '#94a3b8'),
-                            backgroundColor: isToday ? '#3b82f6' : 'transparent'
+                            backgroundColor: isToday ? (theme === 'dark' ? '#a53a4c' : '#c41230') : 'transparent'
                           }}>
                             {date.getDate()}
                           </div>
@@ -392,13 +431,13 @@ function App() {
                                   key={task.id}
                                   className="task-item"
                                   style={{
-                                    backgroundColor: appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#233d57' : '#eff6ff'),
-                                    borderLeft: appointment ? '3px solid #f59e0b' : '3px solid #3b82f6',
+                                    backgroundColor: appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#49272d' : '#fff1f2'),
+                                    borderLeft: appointment ? '3px solid #d97706' : '3px solid #c41230',
                                     padding: '4px 6px',
                                     marginBottom: '4px',
                                     borderRadius: '3px',
                                     fontSize: '0.7rem',
-                                    color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                    color: theme === 'dark' ? '#e7eee9' : '#1e293b',
                                     fontWeight: '500',
                                     cursor: 'pointer',
                                     overflow: 'hidden',
@@ -407,11 +446,11 @@ function App() {
                                   }}
                                   title={task.titre}
                                   onClick={() => editTask(task)}
-                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#5a4827' : '#fef08a') : (theme === 'dark' ? '#2b4b6b' : '#dbeafe')}
-                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#233d57' : '#eff6ff')}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#5a4827' : '#fef08a') : (theme === 'dark' ? '#5b2d35' : '#ffe0e5')}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#49272d' : '#fff1f2')}
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                    <span style={{ backgroundColor: appointment ? (theme === 'dark' ? '#6a5228' : '#fde68a') : (theme === 'dark' ? '#315474' : '#e0f2fe'), color: theme === 'dark' ? '#f8fafc' : '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
+                                    <span style={{ backgroundColor: appointment ? (theme === 'dark' ? '#6a5228' : '#fde68a') : (theme === 'dark' ? '#71333d' : '#ffdce1'), color: theme === 'dark' ? '#f8fafc' : '#741b2b', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
                                       {myClasses.find(c => c.name === task.class_name)?.code || ''}
                                     </span>
                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
@@ -434,9 +473,9 @@ function App() {
           // GRID VIEW
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px', maxWidth: '1400px', margin: '0 auto' }}>
             {myClasses.map((classObj) => (
-              <div key={classObj.name} style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderTop: '6px solid #3b82f6', display: 'flex', flexDirection: 'column' }}>
+              <div key={classObj.name} style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderTop: '6px solid #c41230', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '20px', borderBottom: '1px solid #f1f5f9' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{classObj.name} <span style={{ fontSize: '0.95rem', color: '#334155', fontWeight: 'normal', fontStyle: 'italic' }}>(coeff. {classObj.coefficient})</span></h2>
+                  <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{formatClassName(classObj.name)} <span style={{ fontSize: '0.95rem', color: '#334155', fontWeight: 'normal', fontStyle: 'italic' }}>(coeff. {classObj.coefficient})</span></h2>
                 </div>
                 
                 <div style={{ padding: '20px', flexGrow: 1, minHeight: '150px' }}>
@@ -449,7 +488,7 @@ function App() {
                         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
                         <div style={{ fontWeight: '500' }}>{task.titre}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 'bold' }}>{task.dateRendu}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#c41230', fontWeight: 'bold' }}>{formatTaskDate(task.dateRendu)}</div>
                       </div>
                       
                       {/* DELETE BUTTON */}
@@ -466,8 +505,8 @@ function App() {
                 </div>
 
                 <div style={{ padding: '20px' }}>
-                  <button onClick={() => addTask(classObj)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed #3b82f6', color: '#3b82f6', cursor: 'pointer', backgroundColor: '#eff6ff' }}>
-                    + Add Assignment
+                  <button onClick={() => addTask(classObj)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed #c41230', color: '#a71930', cursor: 'pointer', backgroundColor: '#fff1f2' }}>
+                    + Ajouter une tâche
                   </button>
                 </div>
               </div>
@@ -476,17 +515,17 @@ function App() {
         ) : (
           // LIST VIEW
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h2 style={{ color: '#1e293b', marginBottom: '20px' }}>All Tasks - Sorted by Due Date</h2>
+            <h2 style={{ color: '#1e293b', marginBottom: '20px' }}>Toutes les tâches, triées par date d’échéance et coefficients</h2>
             {getSortedTasks().length === 0 ? (
               <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', textAlign: 'center', color: '#64748b' }}>
-                No tasks yet. Create one to get started!
+                Aucune tâche pour le moment. Créez-en une pour commencer !
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {getSortedTasks().map(task => {
                   const classObj = myClasses.find(c => c.name === task.class_name);
                   return (
-                    <div key={task.id} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `4px solid #3b82f6` }}>
+                    <div key={task.id} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `4px solid #c41230` }}>
                       <div 
                         style={{ flex: 1, cursor: 'pointer', padding: '5px', borderRadius: '4px', transition: 'background-color 0.2s' }}
                         onClick={() => editTask(task)}
@@ -495,9 +534,9 @@ function App() {
                       >
                         <div style={{ fontWeight: '600', fontSize: '1rem', color: '#1e293b' }}>{task.titre}</div>
                         <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-                          {task.class_name} {classObj && <span style={{ fontStyle: 'italic' }}>(coeff. {classObj.coefficient})</span>}
+                          {formatClassName(task.class_name)} {classObj && <span style={{ fontStyle: 'italic' }}>(coeff. {classObj.coefficient})</span>}
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 'bold', marginTop: '4px' }}>Due: {task.dateRendu}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#c41230', fontWeight: 'bold', marginTop: '4px' }}>Échéance : {formatTaskDate(task.dateRendu)}</div>
                       </div>
                       
                       {/* DELETE BUTTON */}
