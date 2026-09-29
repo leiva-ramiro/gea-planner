@@ -290,7 +290,7 @@ function App() {
     return (
       <main className="auth-screen" data-theme={theme}>
         <form className="auth-panel" onSubmit={submitAuth}>
-          <p className="auth-eyebrow">GEA · PLANNING</p>
+          <p className="auth-eyebrow">Salem aalaykom</p>
           <h1>{authMode === 'login' ? 'Connexion' : 'Créer un compte'}</h1>
           <p className="auth-description">Connectez-vous pour retrouver vos tâches personnelles et celles partagées.</p>
           <label htmlFor="auth-email">Adresse e-mail</label>
