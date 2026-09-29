@@ -92,11 +92,16 @@ function App() {
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('ToDo')
       .update({ titre: newTaskName, dateRendu: normalizedDueDate || "No date" })
       .eq('id', task.id)
       .select();
+
+    if (error) {
+      setTaskError(`Impossible de modifier la tâche : ${error.message}`);
+      return;
+    }
 
     if (data && data.length > 0) {
       setTasks(tasks.map(t => t.id === task.id ? data[0] : t));
@@ -131,7 +136,7 @@ function App() {
   // --- NEW: CALENDAR HELPER FUNCTIONS ---
   const getTasksForDate = (date) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    return tasks.filter(t => t.dateRendu === dateStr);
+    return tasks.filter(t => getTaskDateKey(t.dateRendu) === dateStr);
   };
 
   const formatClassName = (name) => name === 'TACHES' ? 'Tâches' : name;
@@ -160,6 +165,12 @@ function App() {
     if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== month - 1 || parsedDate.getDate() !== day) return null;
 
     return `${yearText}-${monthText.padStart(2, '0')}-${dayText.padStart(2, '0')}`;
+  };
+
+  const getTaskDateKey = (value) => {
+    if (typeof value !== 'string') return '';
+    if (/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)) return value.slice(0, 10);
+    return normalizeTaskDate(value) || '';
   };
 
   const isAppointmentTask = (task) => task.class_name === 'Appointements';
