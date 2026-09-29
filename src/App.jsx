@@ -4,45 +4,61 @@ import { supabase } from './supabaseClient'
 function App() {
 
   const myClasses = [
-    { name: "EC2", coefficient: 4, code: "EC" },
-    { name: "Maths", coefficient: 3, code: "MA" },
-    { name: "Analyse Numérique", coefficient: 3.5, code: "AN" },
-    { name: "ETEP2", coefficient: 3, code: "ETP" },
-    { name: "Humanités", coefficient: 3, code: "HU" },
-    { name: "IF2", coefficient: 2, code: "IF" },
-    { name: "Automatique 1", coefficient: 2, code: "AU" },
-    { name: "Télécommunications 1", coefficient: 1, code: "TC" },
+    { name: "IF3", coefficient: 3, code: "IF" },
+    { name: "AU2", coefficient: 2, code: "AU" },
+    { name: "TS", coefficient: 2, code: "AN" },
+    { name: "TT", coefficient: 2, code: "TT" },
+    { name: "TC12", coefficient: 1, code: "TC" },
+    { name: "MA3-S1", coefficient: 1, code: "MA" },
+    { name: "SHS3", coefficient: 2, code: "SHS" },
     { name: "Anglais", coefficient: 2, code: "ANG" }, 
-    { name: "Appointements", coefficient: 0, code: "Perso" },
+    { name: "PE", coefficient: 0, code: "PE" },
+    { name: "TACHES", coefficient: 0, code: "Perso" },
 
   ];
 
   const [tasks, setTasks] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', or 'calendar'
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [editingTaskId, setEditingTaskId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('gea-planner-theme') || 'light');
+  const [taskError, setTaskError] = useState('');
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    localStorage.setItem('gea-planner-theme', theme);
+  }, [theme]);
 
-  async function fetchTasks() {
-    const { data } = await supabase.from('ToDo').select('*');
-    if (data) setTasks(data);
-  }
+  useEffect(() => {
+    async function loadTasks() {
+      const { data } = await supabase.from('ToDo').select('*');
+      if (data) setTasks(data);
+    }
+
+    loadTasks();
+  }, []);
 
   const addTask = async (classObj) => {
     const taskName = prompt(`What is the new task for ${classObj.name}?`);
-    if (!taskName) return; 
+    if (taskName === null || !taskName.trim()) return;
     const dueDate = prompt(`When is it due?`);
-    
-    const { data, error } = await supabase
-      .from('ToDo')
-      .insert([{ titre: taskName, dateRendu: dueDate || "No date", class_name: classObj.name }])
-      .select();
 
-    if (data) setTasks([...tasks, ...data]);
+    setTaskError('');
+    try {
+      const { data, error } = await supabase
+        .from('ToDo')
+        .insert([{ titre: taskName.trim(), dateRendu: dueDate?.trim() || "No date", class_name: classObj.name }])
+        .select();
+
+      if (error) throw error;
+      if (!data?.length) {
+        setTaskError('The task was not returned by Supabase. Check the table permissions and try refreshing.');
+        return;
+      }
+
+      setTasks(currentTasks => [...currentTasks, ...data]);
+    } catch (error) {
+      setTaskError(`Could not add task: ${error.message || 'Supabase request failed.'}`);
+    }
   };
 
   // --- NEW: DELETE FUNCTION ---
@@ -66,7 +82,7 @@ function App() {
     const newDueDate = prompt(`Edit due date:`, task.dateRendu);
     if (newDueDate === null) return; // User cancelled
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('ToDo')
       .update({ titre: newTaskName, dateRendu: newDueDate || "No date" })
       .eq('id', task.id)
@@ -74,7 +90,6 @@ function App() {
 
     if (data && data.length > 0) {
       setTasks(tasks.map(t => t.id === task.id ? data[0] : t));
-      setEditingTaskId(null);
     }
   };
 
@@ -150,7 +165,7 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', backgroundColor: '#f8fafc', minHeight: '100vh', width: '100vw', boxSizing: 'border-box', fontFamily: 'sans-serif', position: 'relative' }}>
+    <div data-theme={theme} style={{ display: 'flex', backgroundColor: '#f8fafc', minHeight: '100vh', width: '100vw', boxSizing: 'border-box', fontFamily: 'sans-serif', position: 'relative' }}>
       {/* OVERLAY FOR MOBILE */}
       {sidebarOpen && (
         <div 
@@ -274,9 +289,20 @@ function App() {
           ☰
         </button>
 
-        <header className="app-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ color: '#1e293b' }}>3GEA S2 Planner</h1>
+        <header className="app-header" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
+          <h1 style={{ color: '#1e293b' }}>4GEA S3 Planner</h1>
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            aria-pressed={theme === 'dark'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+          </button>
         </header>
+
+        {taskError && <div className="task-error" role="alert">{taskError}</div>}
         
         {viewMode === 'calendar' ? (
           // CALENDAR VIEW
@@ -317,14 +343,14 @@ function App() {
                   const isToday = date && new Date().toDateString() === date.toDateString();
                   const isCurrentMonth = date && date.getMonth() === currentMonth.getMonth();
 
-                  let bgColor = '#f8fafc';
+                  let bgColor = theme === 'dark' ? '#17212e' : '#f8fafc';
                   if (date) {
                     if (isToday) {
                       bgColor = '#3b82f6';
                     } else if (isHighlighted(date)) {
-                      bgColor = '#d1fae5';
+                      bgColor = theme === 'dark' ? '#263b38' : '#d1fae5';
                     } else if (isCurrentMonth) {
-                      bgColor = 'white';
+                      bgColor = theme === 'dark' ? '#202c3a' : 'white';
                     }
                   }
 
@@ -366,13 +392,13 @@ function App() {
                                   key={task.id}
                                   className="task-item"
                                   style={{
-                                    backgroundColor: appointment ? '#fef3c7' : '#eff6ff',
+                                    backgroundColor: appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#233d57' : '#eff6ff'),
                                     borderLeft: appointment ? '3px solid #f59e0b' : '3px solid #3b82f6',
                                     padding: '4px 6px',
                                     marginBottom: '4px',
                                     borderRadius: '3px',
                                     fontSize: '0.7rem',
-                                    color: '#1e293b',
+                                    color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
                                     fontWeight: '500',
                                     cursor: 'pointer',
                                     overflow: 'hidden',
@@ -381,11 +407,11 @@ function App() {
                                   }}
                                   title={task.titre}
                                   onClick={() => editTask(task)}
-                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = appointment ? '#fef08a' : '#dbeafe'}
-                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = appointment ? '#fef3c7' : '#eff6ff'}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#5a4827' : '#fef08a') : (theme === 'dark' ? '#2b4b6b' : '#dbeafe')}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = appointment ? (theme === 'dark' ? '#493b20' : '#fef3c7') : (theme === 'dark' ? '#233d57' : '#eff6ff')}
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                    <span style={{ backgroundColor: appointment ? '#fde68a' : '#e0f2fe', color: '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
+                                    <span style={{ backgroundColor: appointment ? (theme === 'dark' ? '#6a5228' : '#fde68a') : (theme === 'dark' ? '#315474' : '#e0f2fe'), color: theme === 'dark' ? '#f8fafc' : '#0f172a', fontWeight: '700', borderRadius: '999px', padding: '2px 8px', fontSize: '0.65rem', letterSpacing: '0.03em' }}>
                                       {myClasses.find(c => c.name === task.class_name)?.code || ''}
                                     </span>
                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
